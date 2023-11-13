@@ -4,7 +4,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { PickList } from "primereact/picklist";
 import { InputText } from "primereact/inputtext";
-import { FilterMatchMode, FilterOperator } from "primereact/api";
+import { FilterMatchMode } from "primereact/api";
 import { Tag } from "primereact/tag";
 import { Toast } from "primereact/toast";
 import { Toolbar } from "primereact/toolbar";
@@ -46,7 +46,7 @@ const mockItems = [
     status: "new",
     note: "",
     id: "caf38333-e032-49cf-a36d-b2fd7be8c8f6",
-    owner: "2897a6b1-05fa-4f21-8def-4133bf2ed26e",
+    owner: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
     created_at: "2023-05-19",
   },
   {
@@ -54,7 +54,7 @@ const mockItems = [
     note: "",
     status: "done",
     id: "f47c3697-8a48-4a40-a95c-c7c4a88050ba",
-    owner: "be54fceb-ac32-4795-91b1-8005f04fd792",
+    owner: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
     created_at: "2023-05-19",
   },
   {
@@ -544,7 +544,7 @@ function ItemsList() {
           // rows={10}
           // rowsPerPageOptions={[5, 10, 25]}
           // paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          // currentPageReportTemplate="Ukázka od {first} do {last} z celkem {totalRecords} ingrediencí"
+          // currentPageReportTemplate="Ukázka od {first} do {last} z celkem {totalRecords} položek"
           globalFilter={globalFilter}
           header={header}
         >

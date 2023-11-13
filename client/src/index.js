@@ -2,7 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import Header from "./routes/Header";
 import ErrorPage from "./error-page";
 import ListItems from "./routes/ListItems";
 

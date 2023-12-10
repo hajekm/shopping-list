@@ -1,8 +1,13 @@
+const List = require("../../model/list");
+
 async function GetAbl(req, res, next) {
   try {
     const listId = req.params.id;
-    // find list and return if not found 404
-    res.json(listId);
+    const list = await List.findById(listId);
+    if (!list) {
+      return res.status(404).json({ message: 'List not found' });
+    }
+    res.json(list);
   } catch (e) {
     next(e);
   }

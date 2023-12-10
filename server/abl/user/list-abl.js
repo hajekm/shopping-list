@@ -1,7 +1,9 @@
+const User = require("../../model/user");
+
 async function ListAbl(req, res, next) {
   try {
-    //list all users
-    res.json(req.body);
+    const users = await User.find();
+    res.json(users);
   } catch (e) {
     next(e);
   }

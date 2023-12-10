@@ -1,4 +1,5 @@
 const Ajv = require("ajv").default;
+const List = require("../../model/list");
 
 let schema = {
   type: "object",
@@ -12,15 +13,20 @@ let schema = {
 async function UpdateAbl(req, res, next) {
   try {
     const ajv = new Ajv();
-    let list = req.body;
-    valid = ajv.validate(schema, recipe);
+    const listBody = req.body;
+    valid = ajv.validate(schema, listBody);
     if (valid) {
-      // update list if not found return 404
-      res.json(list);
+      const list = await List.findByIdAndUpdate(req.params.id, listBody, {
+        new: true,
+      });
+      if (!item) {
+        return res.status(404).json({ message: "List not found" });
+      }
+      res.json(item);
     } else {
       res.status(400).send({
-        errorMessage: "validation of input failed",
-        params: list,
+        message: "validation of input failed",
+        params: listBody,
         reason: ajv.errors,
       });
     }

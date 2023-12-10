@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const db = require("./db");
 
 const itemRouter = require("./controller/item-controller");
 const listRouter = require("./controller/list-controller");
@@ -26,8 +27,8 @@ app.use("/user", userRouter);
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send({
-    errorMessage: "something went wrong",
-    reason: err,
+    message: "something went wrong",
+    reason: err.message,
   });
 });
 

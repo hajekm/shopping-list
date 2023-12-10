@@ -1,7 +1,9 @@
+const Item = require("../../model/item");
+
 async function ListAbl(req, res, next) {
   try {
-    // find items
-    res.json({});
+    const items = await Item.find();
+    res.json(items);
   } catch (e) {
     next(e);
   }

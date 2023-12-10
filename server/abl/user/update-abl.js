@@ -1,4 +1,5 @@
 const Ajv = require("ajv").default;
+const User = require("../../model/user");
 
 let schema = {
   type: "object",
@@ -8,20 +9,21 @@ let schema = {
     password: { type: "string", minLength: 5 },
     role: { type: "string" },
   },
-  required: ["email", "password"],
+  required: ["email"],
 };
 
 async function UpdateAbl(req, res, next) {
   try {
-    const token = req.headers["authorization"];
     const ajv = new Ajv();
-    let user = req.body;
-    valid = ajv.validate(schema, ingredient);
+    const userBody = req.body;
+    valid = ajv.validate(schema, userBody);
     if (valid) {
-      if (user.role === "admin") {
-        //check if user from token is admin else  return 403
+      const user = await User.findByIdAndUpdate(req.params.id, userBody, {
+        new: true,
+      });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
-      // update ingredient
       res.json(user);
     } else {
       res.status(400).send({

@@ -1,4 +1,5 @@
 const Ajv = require("ajv").default;
+const Item = require("../../model/item");
 
 let schema = {
   type: "object",
@@ -12,15 +13,16 @@ let schema = {
 async function CreateAbl(req, res, next) {
   try {
     const ajv = new Ajv();
-    const valid = ajv.validate(schema, req.body);
-    let item = req.body;
+    const itemBody = req.body;
+    const valid = ajv.validate(schema, itemBody);
     if (valid) {
-      // create item
+      const item = new Item(itemBody);
+      await item.save();
       res.json(item);
     } else {
       res.status(400).send({
-        errorMessage: "validation of input failed",
-        params: item,
+        message: "validation of input failed",
+        params: itemBody,
         reason: ajv.errors,
       });
     }

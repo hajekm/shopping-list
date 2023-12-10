@@ -6,8 +6,6 @@ import {
   faXmark,
   faArrowAltCircleRight,
   faFilterCircleXmark,
-  faUsers,
-  faListCheck,
   faCirclePlus,
   faSave,
 } from "@fortawesome/free-solid-svg-icons";
@@ -20,61 +18,15 @@ import { Dropdown } from "primereact/dropdown";
 import { Dialog } from "primereact/dialog";
 import { Toast } from "primereact/toast";
 import { Card } from "primereact/card";
-import { Menubar } from "primereact/menubar";
-import { v4 as uuidv4 } from "uuid";
-import { Link } from "react-router-dom";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
 import StatusTag from "./StatusTag";
 import ItemInput from "./ItemInput";
-
-const mockList = [
-  {
-    id: "b2f2cce4-ee5a-4b59-839b-a39b87763143",
-    title: "Na zahradu",
-    status: "cancelled",
-    owner: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
-    created_at: "2023-05-19",
-    members: [],
-  },
-  {
-    id: "49274cb2-d604-4c13-8786-7daf547cedd3",
-    title: "Nákup na pondělí",
-    status: "done",
-    owner: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-    created_at: "2023-05-19",
-    members: [],
-  },
-  {
-    id: "dad9069e-9326-44fc-9fd6-5508e22f2141",
-    title: "TODO list",
-    status: "new",
-    owner: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-    created_at: "2023-05-19",
-    members: [],
-  },
-];
-
-const mockUsers = [
-  {
-    email: "owner@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-  },
-  {
-    email: "member@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
-  },
-  {
-    email: "notmember@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "646b2a56-599c-43e0-b15a-518c7b166d2b",
-  },
-];
+import { ShoppingListService } from "../Service";
+import Progress from "./Progress";
+import ErrorResponse from "./ErrorResponse";
+import DateTag from "./DateTag";
+import { useNavigate } from "react-router-dom";
 
 let emptyMember = {
   email: "",
@@ -98,86 +50,159 @@ function ShoppingList() {
   const [list, setList] = useState(emptyList);
   const [visibleLists, setVisibleLists] = useState([]);
   const [status, setStatus] = useState(null);
-  const [users, setUsers] = useState(mockUsers);
-  const [user, setUser] = useState(emptyMember);
+  const [users, setUsers] = useState([]);
+  const [owner, setOwner] = useState(emptyMember);
   const [deleteListDialog, setDeleteListDialog] = useState(false);
   const [addListDialog, setAddListDialog] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [callStatus, setCallStatus] = useState({ state: "pending" });
   const toast = useRef(null);
   const statuses = [
-    { name: "Nový", code: "new" },
-    { name: "Hotový", code: "done" },
-    { name: "Zrušený", code: "cancelled" },
+    { name: "Nové", code: "new" },
+    { name: "Hotové", code: "done" },
     { name: "Vše", code: "all" },
   ];
+  let navigate = useNavigate();
 
   useEffect(() => {
-    let _lists = mockList.filter((e) => e.status === "new");
-    setLists(mockList);
-    setVisibleLists(_lists);
+    ShoppingListService.getUser("xyz")
+      .then(async (res) => {
+        const userJson = await res.json();
+        if (res.ok) {
+          setOwner(userJson);
+          return true;
+        } else {
+          console.log(res);
+          setCallStatus({ state: "auth" });
+          return false;
+        }
+      })
+      .then((auth) => {
+        if (auth) {
+          ShoppingListService.getUsers().then(async (res) => {
+            const usersJson = await res.json();
+            if (res.ok) {
+              setUsers(usersJson);
+            } else {
+              console.log(res);
+              setUsers(owner);
+            }
+          });
+          ShoppingListService.getShoppingLists().then(async (response) => {
+            const responseJson = await response.json();
+            switch (response.status) {
+              case 200:
+                setLists(responseJson);
+                let _lists = responseJson.filter((l) => l.status === "new");
+                setVisibleLists(_lists);
+                setCallStatus({ state: "ok" });
+                break;
+              case 401:
+                console.log(response);
+                setCallStatus({ state: "auth" });
+                break;
+              default:
+                console.log(response);
+                setCallStatus({
+                  state: "error",
+                  status: response.status,
+                  statusText: response.statusText,
+                  message: responseJson.message,
+                });
+                break;
+            }
+          });
+        }
+      });
   }, []);
 
   const saveList = (values) => {
-    if (user || user.id !== "") {
-      setSubmitted(true);
-      let _lists = [...lists];
-      let _visibleLists = [...visibleLists];
-      let current = new Date();
-      let _list = {
-        id: uuidv4,
-        title: values.title,
-        status: "new",
-        owner: user.id,
-        created_at: current.toISOString(),
-      };
-      _lists.push(_list);
-      _visibleLists.push(_list);
-      toast.current.show({
-        severity: "success",
-        summary: "Úspěch",
-        detail: `Seznam ${values.title} byl přidán`,
-        life: 3000,
-      });
-
-      setLists(_lists);
-      setVisibleLists(_visibleLists);
-      setAddListDialog(false);
-    } else {
-      toast.current.show({
-        severity: "danger",
-        summary: "Chyba",
-        detail: `Nejste přihlášen`,
-        life: 3000,
-      });
-    }
+    setSubmitted(true);
+    ShoppingListService.postShoppingList(values).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          let _lists = [...lists];
+          let _visibleLists = [...visibleLists];
+          _lists.push(responseJson);
+          _visibleLists.push(responseJson);
+          setLists(_lists);
+          setVisibleLists(_visibleLists);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Seznam ${values.title} byl přidán`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
+    });
+    setAddListDialog(false);
   };
 
   const deleteList = () => {
-    if (user.id !== list.owner) {
-      toast.current.show({
-        severity: "danger",
-        summary: "Chyba",
-        detail: `Nemáte oprávnění smazat položku: ${list.title}`,
-        life: 3000,
-      });
-    } else {
-      let _lists = lists.filter((e) => e.id !== list.id);
-      let _visibleLists = visibleLists.filter((e) => e.id !== list.id);
-      setLists(_lists);
-      setVisibleLists(_visibleLists);
-      setDeleteListDialog(false);
-      setList(emptyList);
-      toast.current.show({
-        severity: "success",
-        summary: "Úspěch",
-        detail: `Položka ${list.title} byla smazána`,
-        life: 3000,
-      });
-    }
+    ShoppingListService.deleteShoppingList(list.id).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          let _lists = lists.filter((e) => e.id !== list.id);
+          let _visibleLists = visibleLists.filter((e) => e.id !== list.id);
+          console.log(visibleLists);
+          setLists(_lists);
+          setVisibleLists(_visibleLists);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Seznam ${list.title} byl smazán`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
+    });
+    setDeleteListDialog(false);
+    setList(emptyList);
   };
 
   const leftToolbarTemplate = () => {
-    if (user && user.id !== "") {
+    if (owner && owner.id !== "") {
       return (
         <div className="flex flex-wrap gap-2">
           <Button
@@ -198,7 +223,7 @@ function ShoppingList() {
           icon={<FontAwesomeIcon className="mr-1" icon={faFilterCircleXmark} />}
           severity="secondary"
           onClick={() => {
-            let _lists = mockList.filter((e) => e.status === "new");
+            let _lists = lists.filter((e) => e.status === "new");
             setVisibleLists(_lists);
             setStatus(null);
           }}
@@ -239,26 +264,6 @@ function ShoppingList() {
     setAddListDialog(false);
   };
 
-  const start = () => (
-    <Link className="mr-8" to="/">
-      <FontAwesomeIcon size={"3x"} icon={faListCheck} />
-    </Link>
-  );
-
-  const end = () => (
-    <Dropdown
-      icon={<FontAwesomeIcon icon={faUsers} className="mr-1" />}
-      value={user}
-      onChange={(e) => {
-        setUser(e.value);
-      }}
-      options={users}
-      optionLabel="email"
-      placeholder="Log in"
-      className="w-full md:w-14rem"
-    />
-  );
-
   const deleteListDialogFooter = (
     <React.Fragment>
       <Button
@@ -278,12 +283,12 @@ function ShoppingList() {
 
   const header = (l) => (
     <div className="flex flex-wrap justify-content-between gap-2 ml-3 mt-1 mr-3">
-      <h5>{l.created_at}</h5>
+      <DateTag date={l.created_at} />
       <Button
         icon={<FontAwesomeIcon icon={faTrashCan} />}
         rounded
         text
-        visible={l.status !== "cancelled" && l.owner === user.id}
+        visible={l.status !== "cancelled" && l.owner === owner.id}
         severity="danger"
         onClick={() => confirmDeleteList(l)}
         size="small"
@@ -298,14 +303,17 @@ function ShoppingList() {
         icon={
           <FontAwesomeIcon className={"mr-1"} icon={faArrowAltCircleRight} />
         }
-        onClick={() => console.log("redirect: " + l.id)}
+        onClick={() => {
+          let path = `list/${l.id}`;
+          navigate(path);
+        }}
       />
     </div>
   );
 
-  const getOwner = (owner) => {
-    const index = users.findIndex((e) => e.id === owner);
-    return users[index].email;
+  const getOwner = (owner, members) => {
+    const index = members.findIndex((e) => e.id === owner);
+    return members[index].email;
   };
 
   const getShoppingList = (list) => {
@@ -318,111 +326,134 @@ function ShoppingList() {
           header={header(list)}
           className="md:w-20rem"
         >
-          <p className="m-0">Owner: {getOwner(list.owner)}</p>
+          <p className="m-0">Owner: {getOwner(list.owner, list.members)}</p>
         </Card>
       </div>
     );
   };
-
-  return (
-    <div className="card">
-      <Menubar title="Shopping List" start={start} end={end} />
-      <div className="flex grid m-5 justify-content-center grid">
-        <Toast ref={toast} />
-        <br />
-        <div className="col-12">
-          <Toolbar
-            className="mb-4"
-            start={leftToolbarTemplate}
-            end={rightToolbarTemplate}
-          />
-        </div>
-        <DataView
-          value={visibleLists}
-          layout="grid"
-          itemTemplate={getShoppingList}
-        />
-      </div>
-
-      <Dialog
-        visible={addListDialog}
-        style={{ width: "32rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Nový seznam"
-        modal
-        className="p-fluid"
-        onHide={hideAddListDialog}
-      >
-        <Formik
-          initialValues={{
-            owner: user.owner,
-            status: "new",
-            members: [],
-          }}
-          validationSchema={Yup.object({
-            title: Yup.string()
-              .min(3, "Musí obsahovat alespoň 3 znaky")
-              .required("Povinné pole"),
-          })}
-          onSubmit={(values, { setSubmitting }) => {
-            setTimeout(() => {
-              saveList(values);
-              setSubmitted(false);
-              setSubmitting(false);
-            }, 500);
-          }}
-        >
-          {(formik) => (
-            <div className="flex card justify-content-center">
-              <Form className="flex flex-column gap-2">
-                <ItemInput id="title" name="title" label="Název" />
-                <MultiSelect
-                  id="user"
-                  name="user"
-                  options={users}
-                  value={formik.values.members}
-                  onChange={(e) => {
-                    formik.setFieldValue("members", e.value);
-                  }}
-                  optionLabel="email"
-                  placeholder="Vyber členy"
-                  className="w-full md:w-20rem"
-                />
-                <Button
-                  type="submit"
-                  severity="secondary"
-                  icon={<FontAwesomeIcon icon={faSave} className="mr-1" />}
-                  label="Uložit"
-                />
-              </Form>
+  switch (callStatus.state) {
+    case "ok":
+      return (
+        <div className="card">
+          <div className="flex grid m-5 justify-content-center grid">
+            <Toast ref={toast} />
+            <br />
+            <div className="col-12">
+              <Toolbar
+                className="mb-4"
+                start={leftToolbarTemplate}
+                end={rightToolbarTemplate}
+              />
             </div>
-          )}
-        </Formik>
-      </Dialog>
+            <DataView
+              value={visibleLists}
+              layout="grid"
+              itemTemplate={getShoppingList}
+            />
+          </div>
 
-      <Dialog
-        visible={deleteListDialog}
-        style={{ width: "32rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Potvrzení"
-        modal
-        footer={deleteListDialogFooter}
-        onHide={hideDeleteListDialog}
-      >
-        <div className="confirmation-content">
-          <i
-            className="pi pi-exclamation-triangle mr-3"
-            style={{ fontSize: "2rem" }}
-          />
-          {list && (
-            <span>
-              Opravdu chcete smazat seznam <b>{list.title}</b>?
-            </span>
-          )}
+          <Dialog
+            visible={addListDialog}
+            style={{ width: "32rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Nový seznam"
+            modal
+            className="p-fluid"
+            onHide={hideAddListDialog}
+          >
+            <Formik
+              initialValues={{
+                owner: owner.id,
+                status: "new",
+                members: [owner],
+              }}
+              validationSchema={Yup.object({
+                title: Yup.string()
+                  .min(3, "Musí obsahovat alespoň 3 znaky")
+                  .required("Povinné pole"),
+              })}
+              onSubmit={(values, { setSubmitting }) => {
+                setTimeout(() => {
+                  saveList(values);
+                  setSubmitted(false);
+                  setSubmitting(false);
+                }, 500);
+              }}
+            >
+              {(formik) => (
+                <div className="flex card justify-content-center">
+                  <Form className="flex flex-column gap-2">
+                    <ItemInput id="title" name="title" label="Název" />
+                    <MultiSelect
+                      id="user"
+                      name="user"
+                      options={users}
+                      value={formik.values.members}
+                      onChange={(e) => {
+                        formik.setFieldValue("members", e.value);
+                      }}
+                      optionLabel="email"
+                      placeholder="Vyber členy"
+                      className="w-full md:w-20rem"
+                    />
+                    <Button
+                      type="submit"
+                      severity="secondary"
+                      icon={<FontAwesomeIcon icon={faSave} className="mr-1" />}
+                      label="Uložit"
+                    />
+                  </Form>
+                </div>
+              )}
+            </Formik>
+          </Dialog>
+
+          <Dialog
+            visible={deleteListDialog}
+            style={{ width: "32rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Potvrzení"
+            modal
+            footer={deleteListDialogFooter}
+            onHide={hideDeleteListDialog}
+          >
+            <div className="confirmation-content">
+              <i
+                className="pi pi-exclamation-triangle mr-3"
+                style={{ fontSize: "2rem" }}
+              />
+              {list && (
+                <span>
+                  Opravdu chcete smazat seznam <b>{list.title}</b>?
+                </span>
+              )}
+            </div>
+          </Dialog>
         </div>
-      </Dialog>
-    </div>
-  );
+      );
+    case "auth":
+      return (
+        <div className="card">
+          <h2>Please Log In</h2>
+        </div>
+      );
+    case "error":
+      return (
+        <div>
+          <ErrorResponse
+            status={callStatus.status}
+            statusText={callStatus.statusText}
+            message={callStatus.message}
+          />
+        </div>
+      );
+    default:
+      return (
+        <div>
+          <Progress />
+        </div>
+      );
+  }
 }
 
 export default ShoppingList;

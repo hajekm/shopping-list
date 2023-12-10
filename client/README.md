@@ -14,6 +14,15 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 The page will reload when you make changes.\
 You may also see any lint errors in the console.
 
+### `npm run mocks`
+
+Runs mocks for the app.\
+Open [http://localhost:3100](http://localhost:3100) to call it in your browser.
+
+The mocks will reload when you make changes.\
+You may also change call in interactive terminal client.
+See [mock-server docs](https://www.mocks-server.org/docs/overview/)
+
 ### `npm test`
 
 Launches the test runner in the interactive watch mode.\

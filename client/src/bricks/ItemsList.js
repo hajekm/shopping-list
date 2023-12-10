@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { PickList } from "primereact/picklist";
 import { InputText } from "primereact/inputtext";
 import { FilterMatchMode } from "primereact/api";
-import { Tag } from "primereact/tag";
 import { Toast } from "primereact/toast";
 import { Toolbar } from "primereact/toolbar";
 import { Button } from "primereact/button";
-import { v4 as uuidv4 } from "uuid";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,7 +19,6 @@ import {
   faPencil,
   faUsers,
   faUsersSlash,
-  faListCheck,
   faSave,
   faTrashCan,
   faXmark,
@@ -28,82 +26,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { ShoppingListService } from "../Service";
 import ItemInput from "./ItemInput";
-import { Menubar } from "primereact/menubar";
+import Progress from "./Progress";
+import ErrorResponse from "./ErrorResponse";
 import { Dropdown } from "primereact/dropdown";
-import { Link, Outlet } from "react-router-dom";
-
-const mockItems = [
-  {
-    title: "Maso",
-    note: "hovězí mleté 500g",
-    status: "done",
-    id: "6ec88fbd-08b5-400a-b381-945db945eb3c",
-    owner: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-    created_at: "2023-05-19",
-  },
-  {
-    title: "Pečivo",
-    status: "new",
-    note: "",
-    id: "caf38333-e032-49cf-a36d-b2fd7be8c8f6",
-    owner: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
-    created_at: "2023-05-19",
-  },
-  {
-    title: "Máslo",
-    note: "",
-    status: "done",
-    id: "f47c3697-8a48-4a40-a95c-c7c4a88050ba",
-    owner: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
-    created_at: "2023-05-19",
-  },
-  {
-    title: "Párek",
-    status: "new",
-    note: "stačí dva páry",
-    id: "7a32b920-b4ef-4b41-ad0f-99395ddb6d73",
-    owner: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-    created_at: "2023-05-19",
-  },
-];
-
-const mockMembers = [
-  {
-    email: "owner@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-  },
-  {
-    email: "member@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
-  },
-];
-
-const mockUsers = [
-  {
-    email: "owner@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "acec32c6-9f83-4e77-9228-9dab18e49a67",
-  },
-  {
-    email: "member@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "a9ddb9d0-a32e-4c09-9dca-59a007d0b2d8",
-  },
-  {
-    email: "notmember@gmail.com",
-    created_at: "2023-05-19",
-    avatar: "something",
-    id: "646b2a56-599c-43e0-b15a-518c7b166d2b",
-  },
-];
+import StatusTag from "./StatusTag";
+import DateTag from "./DateTag";
 
 function ItemsList() {
+  const { id } = useParams();
   let emptyList = {
     id: "",
     title: "",
@@ -130,14 +60,13 @@ function ItemsList() {
     id: "",
   };
 
-  const [items, setItems] = useState(mockItems);
+  const [items, setItems] = useState([]);
   const [item, setItem] = useState(emptyItem);
   const [list, setList] = useState(emptyList);
-  const [members, setMembers] = useState(mockMembers);
-  const [users, setUsers] = useState(mockUsers);
-  const [availableUsers, setAvailableUsers] = useState([]);
-  const [user, setUser] = useState(emptyMember);
-  const [owner, setOwner] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [user, setUser] = useState(null);
+  const [owner, setOwner] = useState(emptyMember);
   const [deleteItemDialog, setDeleteItemDialog] = useState(false);
   const [deleteMemberDialog, setDeleteMemberDialog] = useState(false);
   const [listTitleDialog, setListTitleDialog] = useState(false);
@@ -153,130 +82,274 @@ function ItemsList() {
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const toast = useRef(null);
   const dt = useRef(null);
-  const [statuses] = useState(["new", "done", "cancelled"]);
+  const [statuses] = useState(["new", "done"]);
+  const [callStatus, setCallStatus] = useState({ state: "pending" });
+  let navigate = useNavigate();
 
   useEffect(() => {
-    setList(ShoppingListService.getShoppingList());
+    ShoppingListService.getUser("xyz")
+      .then(async (res) => {
+        const userJson = await res.json();
+        if (res.ok) {
+          setUser(userJson);
+          return true;
+        } else {
+          console.log(res);
+          setCallStatus({ state: "auth" });
+          return false;
+        }
+      })
+      .then((auth) => {
+        if (auth) {
+          ShoppingListService.getShoppingList(id).then(async (response) => {
+            const responseJson = await response.json();
+            switch (response.status) {
+              case 200:
+                console.log(responseJson);
+                setList(responseJson);
+                setMembers(responseJson.members);
+                setItems(responseJson.items);
+                setOwner(
+                  responseJson.members.filter(
+                    (m) => m.id === responseJson.owner
+                  )
+                );
+                ShoppingListService.getUsers().then(async (res) => {
+                  const usersJson = await res.json();
+                  console.log(usersJson);
+                  if (res.ok) {
+                    let _users = usersJson.filter(
+                      (obj) =>
+                        !responseJson.members.some(({ id }) => obj.id === id)
+                    );
+                    console.log(_users[0]);
+                    setUsers(_users);
+                    console.log(users);
+                  }
+                });
+                setCallStatus({ state: "ok" });
+                break;
+              case 401:
+                console.log(response);
+                setCallStatus({ state: "auth" });
+                break;
+              default:
+                console.log(response);
+                setCallStatus({
+                  state: "error",
+                  status: response.status,
+                  statusText: response.statusText,
+                  message: responseJson.message,
+                });
+                break;
+            }
+          });
+        }
+      });
   }, []);
-
-  useEffect(() => {
-    setAvailableUsers(
-      users.filter((obj) => !members.some(({ id }) => obj.id === id))
-    );
-  }, []);
-
-  const start = () => (
-    <Link className="mr-8" to="/">
-      <FontAwesomeIcon size={"3x"} icon={faListCheck} />
-    </Link>
-  );
-
-  const end = () => (
-    <Dropdown
-      icon={<FontAwesomeIcon icon={faUsers} className="mr-1" />}
-      value={user}
-      onChange={(e) => {
-        setUser(e.value);
-        setOwner(e.value.id === list.owner);
-      }}
-      options={users}
-      optionLabel="email"
-      placeholder="Log in"
-      className="w-full md:w-14rem"
-    />
-  );
 
   const deleteItem = () => {
-    if (user.id !== item.owner) {
-      toast.current.show({
-        severity: "danger",
-        summary: "Chyba",
-        detail: `Nemáte oprávnění smazat položku: ${item.title}`,
-        life: 3000,
-      });
-    } else {
-      let _items = items.filter((e) => e.id !== item.id);
-      setItems(_items);
-      setDeleteItemDialog(false);
-      setItem(emptyItem);
-      toast.current.show({
-        severity: "success",
-        summary: "Úspěch",
-        detail: `Položka ${item.title} byla smazána`,
-        life: 3000,
-      });
-    }
+    ShoppingListService.deleteListItem(item.id).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          let _items = items.filter((e) => e.id !== item.id);
+          setItems(_items);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Položka ${item.title} byla smazána`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
+    });
+    setDeleteItemDialog(false);
+    setItem(emptyItem);
   };
 
   const deleteMember = () => {
-    let _members = members.filter((e) => e.id !== member.id);
-    setMembers(_members);
-    setDeleteMemberDialog(false);
-    toast.current.show({
-      severity: "success",
-      summary: "Úspěch",
-      detail: `Byl jste odstraněn jako člen`,
-      life: 3000,
+    let _members = members.filter((e) => e.id !== user.id);
+    let _list = list;
+    _list.members = _members;
+    ShoppingListService.putShoppingList(_list).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Byl jste odstraněn jako člen`,
+            life: 3000,
+          });
+          setDeleteMemberDialog(false);
+          navigate("/");
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
     });
   };
 
   const saveListTitle = (values) => {
     setSubmitted(true);
-    if (user.id !== list.owner) {
-      toast.current.show({
-        severity: "danger",
-        summary: "Chyba",
-        detail: `Nemáte oprávnění editovat název`,
-        life: 3000,
-      });
-    } else {
-      let _list = list;
-      _list.title = values.title;
-      setList(_list);
-      toast.current.show({
-        severity: "success",
-        summary: "Úspěch",
-        detail: `Nový název byl uložen.`,
-        life: 3000,
-      });
-    }
+    let _list = list;
+    _list.title = values.title;
+    ShoppingListService.putShoppingList(_list).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          setList(responseJson);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Nový název byl uložen.`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
+    });
     setListTitleDialog(false);
   };
 
   const changeItemStatus = (item) => {
-    let _items = [...items];
     let _item = item;
     if (_item.status === "new") {
       _item.status = "done";
     } else if (_item.status === "done") {
       _item.status = "new";
     }
-    const index = _items.findIndex((e) => e.id === item.id);
-    _items[index] = _item;
-    setItems(_items);
+    ShoppingListService.putListItem(_item).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          let _items = [...items];
+          _items.push(responseJson);
+          list.items = _items;
+          setList(list);
+          setItems(_items);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Položce ${_item.title} byl změněn stav.`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
+    });
   };
 
   const saveItem = (values) => {
     setSubmitted(true);
-    let _items = [...items];
-    let current = new Date();
-    let _item = {
-      id: uuidv4,
-      title: values.title,
-      note: values.note,
-      status: "new",
-      owner: user.id,
-      created_at: current.toISOString(),
-    };
-    _items.push(_item);
-    toast.current.show({
-      severity: "success",
-      summary: "Úspěch",
-      detail: `Položka ${values.title} byla přidána na seznam`,
-      life: 3000,
+    ShoppingListService.postListItem(values).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          let _items = [...items];
+          _items.push(responseJson);
+          setItems(_items);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Položka ${values.title} byla přidána na seznam`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
     });
-
-    setItems(_items);
     setAddItemDialog(false);
   };
 
@@ -313,7 +386,7 @@ function ItemsList() {
   };
 
   const leftToolbarTemplate = () => {
-    if (owner || members.find((member) => member.id === user.id))
+    if (members.find((member) => member.id === user.id))
       return (
         <div className="flex flex-wrap gap-2">
           <Button
@@ -327,10 +400,10 @@ function ItemsList() {
   };
 
   const rightToolbarTemplate = () => {
-    if (owner) {
+    if (owner.id === user.id) {
       return (
         <Button
-          label="Členové"
+          label="Členi"
           icon={<FontAwesomeIcon icon={faUsers} className="mr-1" />}
           className="p-button-help"
           onClick={() => setMembersDialog(true)}
@@ -357,7 +430,8 @@ function ItemsList() {
           outlined
           className="mr-3"
           visible={
-            rowData.status === "done" && (user.id === rowData.owner || owner)
+            rowData.status === "done" &&
+            (user.id === rowData.owner || owner.id === user.id)
           }
           severity="warning"
           onClick={() => changeItemStatus(rowData)}
@@ -369,7 +443,8 @@ function ItemsList() {
           className="mr-3"
           visible={
             rowData.status === "new" &&
-            (members.find((member) => member.id === user.id) || owner)
+            (members.find((member) => member.id === user.id) ||
+              owner.id === user.id)
           }
           severity="success"
           onClick={() => changeItemStatus(rowData)}
@@ -378,7 +453,7 @@ function ItemsList() {
           icon={<FontAwesomeIcon icon={faTrashCan} />}
           rounded
           outlined
-          visible={user.id === rowData.owner || owner}
+          visible={user.id === rowData.owner || owner.id === user.id}
           severity="danger"
           onClick={() => confirmDeleteItem(rowData)}
         />
@@ -396,7 +471,7 @@ function ItemsList() {
           outlined
           className="m-0"
           severity="info"
-          visible={owner}
+          visible={owner && user && owner.id === user.id}
           onClick={() => setListTitleDialog(true)}
         />
       </div>
@@ -462,38 +537,56 @@ function ItemsList() {
   );
 
   const onMemberChange = (event) => {
-    setAvailableUsers(event.source);
-    setMembers(event.target);
+    let _list = list;
+    _list.members = event.target;
+    ShoppingListService.putShoppingList(_list).then(async (response) => {
+      const responseJson = await response.json();
+      switch (response.status) {
+        case 200:
+          setList(responseJson);
+          setUsers(event.source);
+          setMembers(event.target);
+          toast.current.show({
+            severity: "success",
+            summary: "Úspěch",
+            detail: `Členi byli změněni`,
+            life: 3000,
+          });
+          break;
+        case 401:
+          console.log(response);
+          setCallStatus({ state: "auth" });
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Nejste přihlášen`,
+            life: 3000,
+          });
+          break;
+        default:
+          console.log(response);
+          toast.current.show({
+            severity: "danger",
+            summary: "Chyba",
+            detail: `Něco se pokazilo ${responseJson.message}`,
+            life: 3000,
+          });
+          break;
+      }
+    });
+    setListTitleDialog(false);
   };
 
   const statusBodyTemplate = (item) => {
-    return (
-      <Tag
-        value={item.status}
-        rounded
-        severity={getSeverity(item.status)}
-      ></Tag>
-    );
-  };
-
-  const getSeverity = (item) => {
-    switch (item) {
-      case "done":
-        return "success";
-
-      case "new":
-        return "info";
-
-      case "cancelled":
-        return "danger";
-
-      default:
-        return null;
-    }
+    return <StatusTag status={item.status} />;
   };
 
   const statusItemTemplate = (option) => {
-    return <Tag value={option} rounded severity={getSeverity(option)} />;
+    return <StatusTag status={option} />;
+  };
+
+  const dateBodyTemplate = (option) => {
+    return <DateTag date={option.created_at} />;
   };
 
   const statusRowFilterTemplate = (options) => {
@@ -521,223 +614,250 @@ function ItemsList() {
     setGlobalFilterValue(value);
   };
 
-  return (
-    <div>
-      <Menubar title="Shopping List" start={start} end={end} />
-      <Outlet />
-      <Toast ref={toast} />
-      <br />
-      <div className="card m-3 justify-content-center">
-        <Toolbar
-          className="mb-4"
-          start={leftToolbarTemplate}
-          end={rightToolbarTemplate}
-        />
+  switch (callStatus.state) {
+    case "ok":
+      return (
+        <div>
+          <Toast ref={toast} />
+          <br />
+          <div className="card m-3 justify-content-center">
+            <Toolbar
+              className="mb-4"
+              start={leftToolbarTemplate}
+              end={rightToolbarTemplate}
+            />
 
-        <DataTable
-          ref={dt}
-          value={items}
-          dataKey="id"
-          filters={filters}
-          filterDisplay="row"
-          // paginator
-          // rows={10}
-          // rowsPerPageOptions={[5, 10, 25]}
-          // paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          // currentPageReportTemplate="Ukázka od {first} do {last} z celkem {totalRecords} položek"
-          globalFilter={globalFilter}
-          header={header}
-        >
-          <Column
-            field="status"
-            header="Stav"
-            body={statusBodyTemplate}
-            sortable
-            style={{ minWidth: "12rem" }}
-            filter
-            showFilterMenu={false}
-            filterMenuStyle={{ width: "14rem" }}
-            filterElement={statusRowFilterTemplate}
-          ></Column>
-          <Column
-            field="title"
-            header="Název"
-            sortable
-            style={{ minWidth: "16rem" }}
-          ></Column>
-          <Column
-            field="note"
-            header="Poznámka"
-            sortable
-            style={{ minWidth: "12rem" }}
-          ></Column>
-          <Column
-            field="created_at"
-            header="Datum"
-            sortable
-            style={{ minWidth: "16rem" }}
-          ></Column>
-          <Column
-            body={actionBodyTemplate}
-            exportable={false}
-            style={{ minWidth: "12rem" }}
-          ></Column>
-        </DataTable>
-      </div>
+            <DataTable
+              ref={dt}
+              value={items}
+              dataKey="id"
+              filters={filters}
+              filterDisplay="row"
+              // paginator
+              // rows={10}
+              // rowsPerPageOptions={[5, 10, 25]}
+              // paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              // currentPageReportTemplate="Ukázka od {first} do {last} z celkem {totalRecords} položek"
+              globalFilter={globalFilter}
+              header={header}
+            >
+              <Column
+                field="status"
+                header="Stav"
+                body={statusBodyTemplate}
+                sortable
+                style={{ minWidth: "12rem" }}
+                filter
+                showFilterMenu={false}
+                filterMenuStyle={{ width: "14rem" }}
+                filterElement={statusRowFilterTemplate}
+              ></Column>
+              <Column
+                field="title"
+                header="Název"
+                sortable
+                style={{ minWidth: "16rem" }}
+              ></Column>
+              <Column
+                field="note"
+                header="Poznámka"
+                sortable
+                style={{ minWidth: "12rem" }}
+              ></Column>
+              <Column
+                field="created_at"
+                header="Datum"
+                body={dateBodyTemplate}
+                sortable
+                style={{ minWidth: "16rem" }}
+              ></Column>
+              <Column
+                body={actionBodyTemplate}
+                exportable={false}
+                style={{ minWidth: "12rem" }}
+              ></Column>
+            </DataTable>
+          </div>
 
-      <Dialog
-        visible={listTitleDialog}
-        style={{ width: "32rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Změna názvu seznamu"
-        placeholder={list.title}
-        modal
-        className="p-fluid"
-        onHide={hideListTitleDialog}
-      >
-        <Formik
-          initialValues={{
-            id: list.id,
-            title: list.title,
-          }}
-          validationSchema={Yup.object({
-            title: Yup.string()
-              .min(3, "Musí obsahovat alespoň 3 znaky")
-              .required("Povinné pole"),
-          })}
-          onSubmit={(values, { setSubmitting }) => {
-            setTimeout(() => {
-              saveListTitle(values);
-              setSubmitted(false);
-              setSubmitting(false);
-            }, 500);
-          }}
-        >
-          {(formik) => (
-            <div className="flex card justify-content-center">
-              <Form className="flex flex-column gap-2">
-                <ItemInput id="title" name="title" label="Název" />
-                <Button
-                  type="submit"
-                  severity="secondary"
-                  icon={<FontAwesomeIcon icon={faSave} className="mr-1" />}
-                  label="Uložit"
-                />
-              </Form>
+          <Dialog
+            visible={listTitleDialog}
+            style={{ width: "32rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Změna názvu seznamu"
+            placeholder={list.title}
+            modal
+            className="p-fluid"
+            onHide={hideListTitleDialog}
+          >
+            <Formik
+              initialValues={{
+                id: list.id,
+                title: list.title,
+              }}
+              validationSchema={Yup.object({
+                title: Yup.string()
+                  .min(3, "Musí obsahovat alespoň 3 znaky")
+                  .required("Povinné pole"),
+              })}
+              onSubmit={(values, { setSubmitting }) => {
+                setTimeout(() => {
+                  saveListTitle(values);
+                  setSubmitted(false);
+                  setSubmitting(false);
+                }, 500);
+              }}
+            >
+              {(formik) => (
+                <div className="flex card justify-content-center">
+                  <Form className="flex flex-column gap-2">
+                    <ItemInput id="title" name="title" label="Název" />
+                    <Button
+                      type="submit"
+                      severity="secondary"
+                      icon={<FontAwesomeIcon icon={faSave} className="mr-1" />}
+                      label="Uložit"
+                    />
+                  </Form>
+                </div>
+              )}
+            </Formik>
+          </Dialog>
+
+          <Dialog
+            visible={addItemDialog}
+            style={{ width: "32rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Nová položka"
+            modal
+            className="p-fluid"
+            onHide={hideAddItemDialog}
+          >
+            <Formik
+              initialValues={{
+                id: item.id,
+                owner: item.owner,
+              }}
+              validationSchema={Yup.object({
+                title: Yup.string()
+                  .min(3, "Musí obsahovat alespoň 3 znaky")
+                  .required("Povinné pole"),
+                note: Yup.string().max(
+                  255,
+                  "Musí obsahovat maximálně 255 znaků"
+                ),
+              })}
+              onSubmit={(values, { setSubmitting }) => {
+                setTimeout(() => {
+                  saveItem(values);
+                  setSubmitted(false);
+                  setSubmitting(false);
+                }, 500);
+              }}
+            >
+              {(formik) => (
+                <div className="flex card justify-content-center">
+                  <Form className="flex flex-column gap-2">
+                    <ItemInput id="title" name="title" label="Název" />
+                    <ItemInput id="note" name="note" label="Poznámka" />
+                    <Button
+                      type="submit"
+                      severity="secondary"
+                      icon={<FontAwesomeIcon icon={faSave} className="mr-1" />}
+                      label="Uložit"
+                    />
+                  </Form>
+                </div>
+              )}
+            </Formik>
+          </Dialog>
+
+          <Dialog
+            visible={deleteItemDialog}
+            style={{ width: "32rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Potvrzení"
+            modal
+            footer={deleteItemDialogFooter}
+            onHide={hideDeleteItemDialog}
+          >
+            <div className="confirmation-content">
+              <i
+                className="pi pi-exclamation-triangle mr-3"
+                style={{ fontSize: "2rem" }}
+              />
+              {item && (
+                <span>
+                  Opravdu chcete smazat položku <b>{item.title}</b>?
+                </span>
+              )}
             </div>
-          )}
-        </Formik>
-      </Dialog>
+          </Dialog>
 
-      <Dialog
-        visible={addItemDialog}
-        style={{ width: "32rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Nová položka"
-        modal
-        className="p-fluid"
-        onHide={hideAddItemDialog}
-      >
-        <Formik
-          initialValues={{
-            id: item.id,
-            owner: item.owner,
-          }}
-          validationSchema={Yup.object({
-            title: Yup.string()
-              .min(3, "Musí obsahovat alespoň 3 znaky")
-              .required("Povinné pole"),
-            note: Yup.string().max(255, "Musí obsahovat maximálně 255 znaků"),
-          })}
-          onSubmit={(values, { setSubmitting }) => {
-            setTimeout(() => {
-              saveItem(values);
-              setSubmitted(false);
-              setSubmitting(false);
-            }, 500);
-          }}
-        >
-          {(formik) => (
-            <div className="flex card justify-content-center">
-              <Form className="flex flex-column gap-2">
-                <ItemInput id="title" name="title" label="Název" />
-                <ItemInput id="note" name="note" label="Poznámka" />
-                <Button
-                  type="submit"
-                  severity="secondary"
-                  icon={<FontAwesomeIcon icon={faSave} className="mr-1" />}
-                  label="Uložit"
-                />
-              </Form>
+          <Dialog
+            visible={deleteMemberDialog}
+            style={{ width: "32rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Potvrzení"
+            modal
+            footer={deleteMemberDialogFooter}
+            onHide={hideDeleteMemberDialog}
+          >
+            <div className="confirmation-content">
+              <i
+                className="pi pi-exclamation-triangle mr-3"
+                style={{ fontSize: "2rem" }}
+              />
+              {item && <span>Opravdu se chcete odstranit jako člen?</span>}
             </div>
-          )}
-        </Formik>
-      </Dialog>
+          </Dialog>
 
-      <Dialog
-        visible={deleteItemDialog}
-        style={{ width: "32rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Potvrzení"
-        modal
-        footer={deleteItemDialogFooter}
-        onHide={hideDeleteItemDialog}
-      >
-        <div className="confirmation-content">
-          <i
-            className="pi pi-exclamation-triangle mr-3"
-            style={{ fontSize: "2rem" }}
-          />
-          {item && (
-            <span>
-              Opravdu chcete smazat položku <b>{item.title}</b>?
-            </span>
-          )}
+          <Dialog
+            visible={membersDialog}
+            style={{ width: "50rem" }}
+            breakpoints={{ "960px": "75vw", "641px": "90vw" }}
+            header="Správa členů"
+            modal
+            onHide={hideMembersDialog}
+          >
+            <div className="flex card justify-content-center">
+              <PickList
+                source={users}
+                target={members}
+                onChange={onMemberChange}
+                itemTemplate={itemUserTemplate}
+                breakpoint="1400px"
+                sourceHeader="Uživatelé"
+                targetHeader="Členi"
+                sourceStyle={{ height: "30rem" }}
+                targetStyle={{ height: "30rem" }}
+              />
+            </div>
+          </Dialog>
         </div>
-      </Dialog>
-
-      <Dialog
-        visible={deleteMemberDialog}
-        style={{ width: "32rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Potvrzení"
-        modal
-        footer={deleteMemberDialogFooter}
-        onHide={hideDeleteMemberDialog}
-      >
-        <div className="confirmation-content">
-          <i
-            className="pi pi-exclamation-triangle mr-3"
-            style={{ fontSize: "2rem" }}
-          />
-          {item && <span>Opravdu se chcete odstranit jako člen?</span>}
+      );
+    case "auth":
+      return (
+        <div className="card">
+          <h2>Please Log In</h2>
         </div>
-      </Dialog>
-
-      <Dialog
-        visible={membersDialog}
-        style={{ width: "50rem" }}
-        breakpoints={{ "960px": "75vw", "641px": "90vw" }}
-        header="Správa členů"
-        modal
-        onHide={hideMembersDialog}
-      >
-        <div className="flex card justify-content-center">
-          <PickList
-            source={availableUsers}
-            target={members}
-            onChange={onMemberChange}
-            itemTemplate={itemUserTemplate}
-            breakpoint="1400px"
-            sourceHeader="Uživatelé"
-            targetHeader="Členi"
-            sourceStyle={{ height: "30rem" }}
-            targetStyle={{ height: "30rem" }}
+      );
+    case "error":
+      return (
+        <div>
+          <ErrorResponse
+            status={callStatus.status}
+            statusText={callStatus.statusText}
+            message={callStatus.message}
           />
         </div>
-      </Dialog>
-    </div>
-  );
+      );
+    default:
+      return (
+        <div>
+          <Progress />
+        </div>
+      );
+  }
 }
 
 export default ItemsList;

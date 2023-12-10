@@ -4,27 +4,28 @@ import "./index.css";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import ErrorPage from "./error-page";
 import ShoppingLists from "./routes/ShoppingLists";
+import Header from "./routes/Header";
+import ItemsList from "./bricks/ItemsList";
 
 const router = createBrowserRouter([
   {
-    element: <ShoppingLists />,
+    element: <Header />,
     errorElement: <ErrorPage />,
-    path: "/",
-    // children: [
-    //   {
-    //     path: "/",
-    //     element: <ListItems />,
-    //     index: true,
-    //   },
-    //   {
-    //     path: "/recipes",
-    //     element: <Recipes />,
-    //   },
-    // {
-    //   path: "/ingredients",
-    //   element: <Ingredients />,
-    // },
-    // ],
+    children: [
+      {
+        path: "/",
+        element: <ShoppingLists />,
+        index: true,
+      },
+      {
+        path: "/list/:id",
+        element: <ItemsList />,
+      },
+      // {
+      //   path: "/ingredients",
+      //   element: <Ingredients />,
+      // },
+    ],
   },
 ]);
 

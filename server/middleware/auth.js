@@ -43,7 +43,7 @@ module.exports.isAdmin = async function (req, res, next) {
           message: "insufficient rights",
         });
       }
-      req.body._ownerId = user._id;
+      req.body.userId = user._id;
       next();
     } else {
       res.status(401).json({

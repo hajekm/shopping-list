@@ -8,6 +8,7 @@ let schema = {
     members: { type: "array", items: { type: "object" }, uniqueItems: true },
     items: { type: "array", items: { type: "object" }, uniqueItems: true },
     _ownerId: { type: "string", format: "objectid" },
+    status: { type: "string" },
   },
   required: ["title", "_ownerId"],
 };

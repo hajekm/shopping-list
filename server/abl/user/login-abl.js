@@ -26,11 +26,9 @@ async function LoginAbl(req, res, next) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
       now = new Date();
-      now.setDate(now.getDate() + 1);
+      now.setDate(now.getDate() + 7); //for better testing
       const token = new Token({ expiresAt: now, _ownerId: user._id });
       await token.save();
-      user.token = token;
-      user.password = "";
       res.json(token);
     } else {
       res.status(400).send({

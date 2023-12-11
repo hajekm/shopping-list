@@ -5,9 +5,12 @@ async function GetAbl(req, res, next) {
     const listId = req.params.id;
     const list = await List.findById(listId);
     if (!list) {
-      return res.status(404).json({ message: 'List not found' });
+      return res.status(404).json({ message: "List not found" });
     }
-    res.json(list);
+    if (list._ownerId.toString() !== req.body.userId) {
+      return res.status(403).json({ message: "Insufficient rights" });
+    }
+    return res.json(list);
   } catch (e) {
     next(e);
   }

@@ -1,9 +1,10 @@
 const List = require("../../model/list");
 
 async function ListAbl(req, res, next) {
-  // const withItems = req.query.items;
   try {
-    const lists = await List.find();
+    const lists = await List.find({
+      members: { $elemMatch: { _id: req.body.userId } },
+    });
     res.json(lists);
   } catch (e) {
     next(e);

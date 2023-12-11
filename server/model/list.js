@@ -10,6 +10,12 @@ const listSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   items: {
     type: Array,
+    _id: {
+      type: mongoose.Schema.Types.UUID,
+      default: () => randomUUID(),
+      required: true,
+      unique: true,
+    },
     title: { type: String, required: true },
     _ownerId: {
       type: mongoose.Schema.Types.ObjectId,

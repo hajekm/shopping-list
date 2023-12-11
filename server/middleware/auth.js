@@ -13,7 +13,7 @@ module.exports.isAuthenticate = async function (req, res, next) {
           message: "unauthorized",
         });
       }
-      req.body._ownerId = t._ownerId;
+      req.body.userId = t._ownerId.toString();
       next();
     } else {
       res.status(401).json({

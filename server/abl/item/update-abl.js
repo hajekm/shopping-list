@@ -1,7 +1,8 @@
 const ajv = require("../../util/ajv-formats");
 const List = require("../../model/list");
-const IsMember = require("../../util/user-utils");
+const { IsMember } = require("../../util/user-utils");
 const AllItemsDone = require("../../util/item-utils");
+const IsObjectId = require("../../util/id-validator");
 
 let schema = {
   type: "object",

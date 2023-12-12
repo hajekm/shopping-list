@@ -9,14 +9,14 @@ module.exports.isAuthenticate = async function (req, res, next) {
       const t = await Token.findById(token);
       now = new Date();
       if (!t || t.expiresAt < now) {
-        res.status(401).json({
+        return res.status(401).json({
           message: "unauthorized",
         });
       }
       req.body.userId = t._ownerId.toString();
       next();
     } else {
-      res.status(401).json({
+      return res.status(401).json({
         message: "unauthorized",
       });
     }

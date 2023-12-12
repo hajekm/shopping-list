@@ -1,5 +1,6 @@
 const ajv = require("../../util/ajv-formats");
 const List = require("../../model/list");
+const IsObjectId = require("../../util/id-validator");
 
 let schema = {
   type: "object",
@@ -15,13 +16,17 @@ let schema = {
 
 async function UpdateAbl(req, res, next) {
   try {
+    const listId = req.params.id;
+    if (!IsObjectId(listId)) {
+      return res.status(400).json({ message: "Invalid List ID" });
+    }
     const listBody = req.body;
     valid = ajv.validate(schema, listBody);
     if (valid) {
       if (listBody._ownerId !== req.body.userId) {
         return res.status(403).json({ message: "Insufficient rights" });
       }
-      const list = await List.findByIdAndUpdate(req.params.id, listBody, {
+      const list = await List.findByIdAndUpdate(listId, listBody, {
         new: true,
       });
       if (!list) {

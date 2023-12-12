@@ -1,6 +1,6 @@
 const List = require("../../model/list");
 const IsObjectId = require("../../util/id-validator");
-const utils = require("../../util/user-utils");
+const { IsListOwnerOrItemOwner } = require("../../util/user-utils");
 
 async function DeleteAbl(req, res, next) {
   const listId = req.params.listId;
@@ -18,11 +18,7 @@ async function DeleteAbl(req, res, next) {
       return res.status(404).json({ message: "Item not found" });
     }
     if (
-      !utils.IsListOwnerOrItemOwner(
-        req.body.userId,
-        list._ownerId,
-        item._ownerId
-      )
+      !IsListOwnerOrItemOwner(req.body.userId, list._ownerId, item._ownerId)
     ) {
       return res.status(403).json({ message: "Insufficient rights" });
     }

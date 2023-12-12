@@ -11,8 +11,7 @@ const listSchema = new mongoose.Schema({
   items: {
     type: Array,
     _id: {
-      type: mongoose.Schema.Types.UUID,
-      default: () => randomUUID(),
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
       unique: true,
     },

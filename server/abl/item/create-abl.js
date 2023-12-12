@@ -1,7 +1,8 @@
 const ajv = require("../../util/ajv-formats");
 const List = require("../../model/list");
-const crypto = require("crypto");
-const utils = require("../../util/user-utils");
+const mongoose = require("mongoose");
+const { IsMember } = require("../../util/user-utils");
+const IsObjectId = require("../../util/id-validator");
 
 let schema = {
   type: "object",
@@ -16,6 +17,9 @@ let schema = {
 async function CreateAbl(req, res, next) {
   const listId = req.params.listId;
   try {
+    if (!IsObjectId(listId)) {
+      return res.status(400).json({ message: "Invalid List ID" });
+    }
     let itemBody = req.body;
     const valid = ajv.validate(schema, itemBody);
     if (valid) {
@@ -23,10 +27,10 @@ async function CreateAbl(req, res, next) {
       if (!list) {
         return res.status(404).json({ message: "List not found" });
       }
-      if (!utils.IsMember(itemBody.userId, list.members)) {
+      if (!IsMember(itemBody.userId, list.members)) {
         return res.status(403).json({ message: "Insufficient rights" });
       }
-      itemBody._id = crypto.randomUUID();
+      itemBody._id = new mongoose.Types.ObjectId();
       itemBody.createdAt = new Date();
       itemBody.status = "new";
       itemBody._ownerId = itemBody.userId;

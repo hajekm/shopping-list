@@ -1,5 +1,6 @@
 const List = require("../../model/list");
 const IsObjectId = require("../../util/id-validator");
+const { IsMember } = require("../../util/user-utils");
 
 async function GetAbl(req, res, next) {
   try {
@@ -11,7 +12,7 @@ async function GetAbl(req, res, next) {
     if (!list) {
       return res.status(404).json({ message: "List not found" });
     }
-    if (list._ownerId.toString() !== req.body.userId) {
+    if (!IsMember(req.body.userId, list.members)) {
       return res.status(403).json({ message: "Insufficient rights" });
     }
     return res.json(list);

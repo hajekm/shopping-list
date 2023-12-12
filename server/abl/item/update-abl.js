@@ -19,8 +19,8 @@ async function UpdateAbl(req, res, next) {
   const listId = req.params.listId;
   const itemId = req.params.id;
   try {
-    if (!IsObjectId(listId)) {
-      return res.status(400).json({ message: "Invalid List ID" });
+    if (!IsObjectId(listId) && !IsObjectId(itemId)) {
+      return res.status(400).json({ message: "Invalid input data" });
     }
     const itemBody = req.body;
     valid = ajv.validate(schema, itemBody);

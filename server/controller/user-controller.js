@@ -20,11 +20,11 @@ router.post("/logout", auth.isAuthenticate, async (req, res, next) => {
   await LogoutAbl(req, res, next);
 });
 
-router.get("/", auth.isAdmin, async (req, res, next) => {
+router.get("/", auth.isAuthenticate, async (req, res, next) => {
   await ListAbl(req, res, next);
 });
 
-router.get("/", auth.isAuthenticate, async (req, res, next) => {
+router.get("/:id", auth.isAuthenticate, async (req, res, next) => {
   await GetAbl(req, res, next);
 });
 

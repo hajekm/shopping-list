@@ -5,7 +5,7 @@ async function ListAbl(req, res, next) {
     const lists = await List.find({
       members: { $elemMatch: { _id: req.body.userId } },
     });
-    res.json(lists);
+    return res.json(lists);
   } catch (e) {
     next(e);
   }

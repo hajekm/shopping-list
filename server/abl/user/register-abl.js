@@ -10,7 +10,6 @@ let schema = {
     email: { type: "string" },
     password: { type: "string", minLength: 5 },
     username: { type: "string" },
-    role: { enum: ["user", "admin"] },
   },
   required: ["email", "password"],
 };
@@ -34,6 +33,7 @@ async function RegisterAbl(req, res, next) {
       userBody.role = "user"; //creates only user role and it could be edited later by admin
       const user = new User(userBody);
       await user.save();
+      user.password = "****";
       res.json(user);
     } else {
       res.status(400).send({

@@ -13,6 +13,7 @@ function DateTag(props) {
 
   return (
     <Tag
+        className="m-1"
       value={current}
       icon={
         <FontAwesomeIcon
@@ -21,7 +22,6 @@ function DateTag(props) {
           icon={faCalendarCheck}
         />
       }
-      style={{ background: "white" }}
     ></Tag>
   );
 }

@@ -12,6 +12,6 @@ code {
     monospace;
 }
 
-menuTitle {
-  font-size: x-large;
+.p-menubar > a[class="p-menubar-button"] {
+  display: none !important;
 }

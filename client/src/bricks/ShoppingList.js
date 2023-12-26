@@ -394,7 +394,7 @@ function ShoppingList() {
                       }}
                       optionLabel="email"
                       placeholder="Vyber členy"
-                      className="w-full md:w-20rem"
+                      className="mt-3 w-full md:w-20rem"
                     />
                     <Button
                       type="submit"

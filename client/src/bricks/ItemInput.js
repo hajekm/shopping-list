@@ -7,7 +7,7 @@ const ItemInput = ({ label, ...props }) => {
   const [field, meta] = useField(props);
   return (
     <>
-      <span className="p-float-label">
+      <span className="p-float-label mt-3">
         <InputText
           id={props.id}
           name={props.name}

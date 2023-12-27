@@ -1,18 +1,40 @@
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import {initReactI18next} from 'react-i18next';
 
 // Překlady
 const resources = {
     en: {
         translation: {
-            "key": "Hello World",
-            "aaa": "Fuxk"
+            "errorTitle": "OOPS! Something went wrong",
+            "statusDone": "Done",
+            "statusCancelled": "Cancelled",
+            "statusNew": "New",
+            "statusAll": "All",
+            "statusPlaceholder": "Choose status",
+            "toastSummarySuccess": "OK",
+            "toastSummaryError": "Error",
+            "toastMessageError": "Error",
+            "toastMessageSuccess": "OK",
+            "confirmYes": "Yes",
+            "confirmNo": "No",
+            "detail": "Detail",
+            "newList": "Create list"
         }
     },
     cs: {
         translation: {
-            "key": "Ahoj světe",
-            "aaa": "jebat"
+            "errorTitle": "JEJDA! Něco se pokazilo",
+            "statusDone": "Hotový",
+            "statusCancelled": "Zrušený",
+            "statusNew": "Nový",
+            "statusAll": "Vše",
+            "statusPlaceholder": "Dle stavu",
+            "toastSummarySuccess": "Úspěch",
+            "toastSummaryError": "Chyba",
+            "confirmYes": "Ano",
+            "confirmNo": "Ne",
+            "detail": "Detail",
+            "newList": "Nový seznam"
         }
     }
 };

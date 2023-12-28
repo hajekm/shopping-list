@@ -31,6 +31,7 @@ import ErrorResponse from "./ErrorResponse";
 import {Dropdown} from "primereact/dropdown";
 import StatusTag from "./StatusTag";
 import DateTag from "./DateTag";
+import {useTranslation} from "react-i18next";
 
 function ItemsList() {
     const {id} = useParams();
@@ -84,6 +85,7 @@ function ItemsList() {
     const dt = useRef(null);
     const [statuses] = useState(["new", "done"]);
     const [callStatus, setCallStatus] = useState({state: "pending"});
+    const {t} = useTranslation();
     let navigate = useNavigate();
 
     useEffect(() => {
@@ -105,7 +107,6 @@ function ItemsList() {
                         const responseJson = await response.json();
                         switch (response.status) {
                             case 200:
-                                console.log(responseJson);
                                 setList(responseJson);
                                 setMembers(responseJson.members);
                                 setItems(responseJson.items);
@@ -116,15 +117,12 @@ function ItemsList() {
                                 );
                                 ShoppingListService.getUsers().then(async (res) => {
                                     const usersJson = await res.json();
-                                    console.log(usersJson);
                                     if (res.ok) {
                                         let _users = usersJson.filter(
                                             (obj) =>
                                                 !responseJson.members.some(({id}) => obj.id === id)
                                         );
-                                        console.log(_users[0]);
                                         setUsers(_users);
-                                        console.log(users);
                                     }
                                 });
                                 setCallStatus({state: "ok"});
@@ -158,7 +156,7 @@ function ItemsList() {
                     toast.current.show({
                         severity: "success",
                         summary: t('toastSummarySuccess'),
-                        detail: `Položka ${item.title} byla smazána`,
+                        detail: t('toastMessageDeleteItemSuccess', {title: item.title}),
                         life: 3000,
                     });
                     break;
@@ -167,8 +165,8 @@ function ItemsList() {
                     setCallStatus({state: "auth"});
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Nejste přihlášen`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageUnauthorized'),
                         life: 3000,
                     });
                     break;
@@ -176,8 +174,8 @@ function ItemsList() {
                     console.log(response);
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Něco se pokazilo ${responseJson.message}`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageCommonError', {message: responseJson.message}),
                         life: 3000,
                     });
                     break;
@@ -197,8 +195,8 @@ function ItemsList() {
                 case 200:
                     toast.current.show({
                         severity: "success",
-                        summary: "Úspěch",
-                        detail: `Byl jste odstraněn jako člen`,
+                        summary: t('toastSummarySuccess'),
+                        detail: t('toastMessageListMemberRemovedSuccess', {title: _list.title}),
                         life: 3000,
                     });
                     setDeleteMemberDialog(false);
@@ -209,8 +207,8 @@ function ItemsList() {
                     setCallStatus({state: "auth"});
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Nejste přihlášen`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageUnauthorized'),
                         life: 3000,
                     });
                     break;
@@ -218,8 +216,8 @@ function ItemsList() {
                     console.log(response);
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Něco se pokazilo ${responseJson.message}`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageCommonError', {message: responseJson.message}),
                         life: 3000,
                     });
                     break;
@@ -238,8 +236,8 @@ function ItemsList() {
                     setList(responseJson);
                     toast.current.show({
                         severity: "success",
-                        summary: "Úspěch",
-                        detail: `Nový název byl uložen.`,
+                        summary: t('toastSummarySuccess'),
+                        detail: t('toastMessageChangeTitleListSuccess'),
                         life: 3000,
                     });
                     break;
@@ -248,8 +246,8 @@ function ItemsList() {
                     setCallStatus({state: "auth"});
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Nejste přihlášen`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageUnauthorized'),
                         life: 3000,
                     });
                     break;
@@ -257,8 +255,8 @@ function ItemsList() {
                     console.log(response);
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Něco se pokazilo ${responseJson.message}`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageCommonError', {message: responseJson.message}),
                         life: 3000,
                     });
                     break;
@@ -285,8 +283,8 @@ function ItemsList() {
                     setItems(_items);
                     toast.current.show({
                         severity: "success",
-                        summary: "Úspěch",
-                        detail: `Položce ${_item.title} byl změněn stav.`,
+                        summary: t('toastSummarySuccess'),
+                        detail: t('toastMessageChangeStateItemSuccess', {title: _item.title}),
                         life: 3000,
                     });
                     break;
@@ -295,8 +293,8 @@ function ItemsList() {
                     setCallStatus({state: "auth"});
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Nejste přihlášen`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageUnauthorized'),
                         life: 3000,
                     });
                     break;
@@ -304,8 +302,8 @@ function ItemsList() {
                     console.log(response);
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Něco se pokazilo ${responseJson.message}`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageCommonError', {message: responseJson.message}),
                         life: 3000,
                     });
                     break;
@@ -324,8 +322,8 @@ function ItemsList() {
                     setItems(_items);
                     toast.current.show({
                         severity: "success",
-                        summary: "Úspěch",
-                        detail: `Položka ${values.title} byla přidána na seznam`,
+                        summary: t('toastSummarySuccess'),
+                        detail: t('toastMessageDeleteItemSuccess', {title: values.title}),
                         life: 3000,
                     });
                     break;
@@ -334,8 +332,8 @@ function ItemsList() {
                     setCallStatus({state: "auth"});
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Nejste přihlášen`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageUnauthorized'),
                         life: 3000,
                     });
                     break;
@@ -343,8 +341,8 @@ function ItemsList() {
                     console.log(response);
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Něco se pokazilo ${responseJson.message}`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageCommonError', {message: responseJson.message}),
                         life: 3000,
                     });
                     break;
@@ -390,7 +388,7 @@ function ItemsList() {
             return (
                 <div className="flex flex-wrap gap-2">
                     <Button
-                        label="Nová položka"
+                        label={t('newItem')}
                         icon={<FontAwesomeIcon className="mr-1" icon={faCirclePlus}/>}
                         severity="success"
                         onClick={() => setAddItemDialog(true)}
@@ -403,7 +401,7 @@ function ItemsList() {
         if (owner.id === user.id) {
             return (
                 <Button
-                    label="Členi"
+                    label={t('membersLabel')}
                     icon={<FontAwesomeIcon icon={faUsers} className="mr-1"/>}
                     className="p-button-help"
                     onClick={() => setMembersDialog(true)}
@@ -412,7 +410,7 @@ function ItemsList() {
         } else if (members.find((member) => member.id === user.id)) {
             return (
                 <Button
-                    label="Odstranit se jako člen"
+                    label={t('removeAsMemberButton')}
                     icon={<FontAwesomeIcon icon={faUsersSlash} className="mr-1"/>}
                     className="p-button-help"
                     onClick={() => confirmDeleteMember(user)}
@@ -481,7 +479,7 @@ function ItemsList() {
           <InputText
               type="search"
               onInput={(e) => setGlobalFilter(e.target.value)}
-              placeholder="Hledat..."
+              placeholder={t('globalFilterPlaceholder')}
           />
         </span>
             </div>
@@ -505,13 +503,13 @@ function ItemsList() {
     const deleteItemDialogFooter = (
         <React.Fragment>
             <Button
-                label="Ne"
+                label={t('confirmNo')}
                 icon={<FontAwesomeIcon icon={faXmark} className="mr-1"/>}
                 outlined
                 onClick={() => setDeleteItemDialog(false)}
             />
             <Button
-                label="Ano"
+                label={t('confirmYes')}
                 icon={<FontAwesomeIcon icon={faCheck} className="mr-1"/>}
                 severity="danger"
                 onClick={deleteItem}
@@ -522,13 +520,13 @@ function ItemsList() {
     const deleteMemberDialogFooter = (
         <React.Fragment>
             <Button
-                label="Ne"
+                label={t('confirmNo')}
                 icon={<FontAwesomeIcon icon={faXmark} className="mr-1"/>}
                 outlined
                 onClick={() => setDeleteMemberDialog(false)}
             />
             <Button
-                label="Ano"
+                label={t('confirmYes')}
                 icon={<FontAwesomeIcon icon={faCheck} className="mr-1"/>}
                 severity="danger"
                 onClick={deleteMember}
@@ -548,8 +546,8 @@ function ItemsList() {
                     setMembers(event.target);
                     toast.current.show({
                         severity: "success",
-                        summary: "Úspěch",
-                        detail: `Členi byli změněni`,
+                        summary: t('toastSummarySuccess'),
+                        detail: t('toastMessageChangeListMembersSuccess'),
                         life: 3000,
                     });
                     break;
@@ -558,8 +556,8 @@ function ItemsList() {
                     setCallStatus({state: "auth"});
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Nejste přihlášen`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageUnauthorized'),
                         life: 3000,
                     });
                     break;
@@ -567,8 +565,8 @@ function ItemsList() {
                     console.log(response);
                     toast.current.show({
                         severity: "danger",
-                        summary: "Chyba",
-                        detail: `Něco se pokazilo ${responseJson.message}`,
+                        summary: t('toastSummaryError'),
+                        detail: t('toastMessageCommonError', {message: responseJson.message}),
                         life: 3000,
                     });
                     break;
@@ -596,7 +594,7 @@ function ItemsList() {
                 options={statuses}
                 onChange={(e) => options.filterApplyCallback(e.value)}
                 itemTemplate={statusItemTemplate}
-                placeholder="Vyberte..."
+                placeholder={t('statusPlaceholder')}
                 className="p-column-filter"
                 showClear
                 style={{minWidth: "12rem"}}
@@ -643,7 +641,7 @@ function ItemsList() {
                         >
                             <Column
                                 field="status"
-                                header="Stav"
+                                header={t('statusColumnHeader')}
                                 body={statusBodyTemplate}
                                 sortable
                                 style={{minWidth: "12rem"}}
@@ -654,19 +652,19 @@ function ItemsList() {
                             ></Column>
                             <Column
                                 field="title"
-                                header="Název"
+                                header={t('titleColumnHeader')}
                                 sortable
                                 style={{minWidth: "16rem"}}
                             ></Column>
                             <Column
                                 field="note"
-                                header="Poznámka"
+                                header={t('noteColumnHeader')}
                                 sortable
                                 style={{minWidth: "12rem"}}
                             ></Column>
                             <Column
                                 field="created_at"
-                                header="Datum"
+                                header={t('createdAtColumnHeader')}
                                 body={dateBodyTemplate}
                                 sortable
                                 style={{minWidth: "16rem"}}
@@ -683,7 +681,7 @@ function ItemsList() {
                         visible={listTitleDialog}
                         style={{width: "32rem"}}
                         breakpoints={{"960px": "75vw", "641px": "90vw"}}
-                        header="Změna názvu seznamu"
+                        header={t('listTitleChangeHeader')}
                         placeholder={list.title}
                         modal
                         className="p-fluid"
@@ -696,8 +694,8 @@ function ItemsList() {
                             }}
                             validationSchema={Yup.object({
                                 title: Yup.string()
-                                    .min(3, "Musí obsahovat alespoň 3 znaky")
-                                    .required("Povinné pole"),
+                                    .min(3, t('atLeastChars', {charNo: 3}))
+                                    .required(t('requiredField')),
                             })}
                             onSubmit={(values, {setSubmitting}) => {
                                 setTimeout(() => {
@@ -710,12 +708,12 @@ function ItemsList() {
                             {(formik) => (
                                 <div className="flex card justify-content-center">
                                     <Form className="flex flex-column gap-2">
-                                        <ItemInput id="title" name="title" label="Název"/>
+                                        <ItemInput id="title" name="title" label={t('titleLabel')}/>
                                         <Button
                                             type="submit"
                                             severity="secondary"
                                             icon={<FontAwesomeIcon icon={faSave} className="mr-1"/>}
-                                            label="Uložit"
+                                            label={t('saveButton')}
                                         />
                                     </Form>
                                 </div>
@@ -727,7 +725,7 @@ function ItemsList() {
                         visible={addItemDialog}
                         style={{width: "32rem"}}
                         breakpoints={{"960px": "75vw", "641px": "90vw"}}
-                        header="Nová položka"
+                        header={t('newItem')}
                         modal
                         className="p-fluid"
                         onHide={hideAddItemDialog}
@@ -739,11 +737,11 @@ function ItemsList() {
                             }}
                             validationSchema={Yup.object({
                                 title: Yup.string()
-                                    .min(3, "Musí obsahovat alespoň 3 znaky")
-                                    .required("Povinné pole"),
+                                    .min(3, t('atLeastChars', {charNo: 3}))
+                                    .required(t('requiredField')),
                                 note: Yup.string().max(
                                     255,
-                                    "Musí obsahovat maximálně 255 znaků"
+                                    t('maxChars', {charNo: 255})
                                 ),
                             })}
                             onSubmit={(values, {setSubmitting}) => {
@@ -757,13 +755,13 @@ function ItemsList() {
                             {(formik) => (
                                 <div className="flex card justify-content-center">
                                     <Form className="flex flex-column gap-2">
-                                        <ItemInput id="title" name="title" label="Název"/>
-                                        <ItemInput id="note" name="note" label="Poznámka"/>
+                                        <ItemInput id="title" name="title" label={t('titleLabel')}/>
+                                        <ItemInput id="note" name="note" label={t('noteLabel')}/>
                                         <Button
                                             type="submit"
                                             severity="secondary"
                                             icon={<FontAwesomeIcon icon={faSave} className="mr-1"/>}
-                                            label="Uložit"
+                                            label={t('saveButton')}
                                         />
                                     </Form>
                                 </div>
@@ -775,7 +773,7 @@ function ItemsList() {
                         visible={deleteItemDialog}
                         style={{width: "32rem"}}
                         breakpoints={{"960px": "75vw", "641px": "90vw"}}
-                        header="Potvrzení"
+                        header={t('confirmationHeader')}
                         modal
                         footer={deleteItemDialogFooter}
                         onHide={hideDeleteItemDialog}
@@ -787,7 +785,7 @@ function ItemsList() {
                             />
                             {item && (
                                 <span>
-                  Opravdu chcete smazat položku <b>{item.title}</b>?
+                  {t('deleteConfirmMessage')} <b>{item.title}</b>?
                 </span>
                             )}
                         </div>
@@ -797,7 +795,7 @@ function ItemsList() {
                         visible={deleteMemberDialog}
                         style={{width: "32rem"}}
                         breakpoints={{"960px": "75vw", "641px": "90vw"}}
-                        header="Potvrzení"
+                        header={t('confirmationHeader')}
                         modal
                         footer={deleteMemberDialogFooter}
                         onHide={hideDeleteMemberDialog}
@@ -807,7 +805,7 @@ function ItemsList() {
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{fontSize: "2rem"}}
                             />
-                            {item && <span>Opravdu se chcete odstranit jako člen?</span>}
+                            {item && <span>{t('deleteConfirmMemberMessage')}</span>}
                         </div>
                     </Dialog>
 
@@ -815,7 +813,7 @@ function ItemsList() {
                         visible={membersDialog}
                         style={{width: "50rem"}}
                         breakpoints={{"960px": "75vw", "641px": "90vw"}}
-                        header="Správa členů"
+                        header={t('membersManagementHeader')}
                         modal
                         onHide={hideMembersDialog}
                     >
@@ -826,8 +824,8 @@ function ItemsList() {
                                 onChange={onMemberChange}
                                 itemTemplate={itemUserTemplate}
                                 breakpoint="1400px"
-                                sourceHeader="Uživatelé"
-                                targetHeader="Členi"
+                                sourceHeader={t('membersManagementUsersTitle')}
+                                targetHeader={t('membersManagementMembersTitle')}
                                 sourceStyle={{height: "30rem"}}
                                 targetStyle={{height: "30rem"}}
                             />

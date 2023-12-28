@@ -24,8 +24,6 @@ let emptyMember = {
 function Header() {
     const [users, setUsers] = useState([]);
     const [user, setUser] = useState(emptyMember);
-    const [label, setLabel] = useState("Login");
-    const [callStatus, setCallStatus] = useState({state: "pending"});
     const [checked, setChecked] = useState(false)
     const {changeTheme} = useTheme();
     const cookies = new Cookies();
@@ -40,21 +38,9 @@ function Header() {
         }
         changeTheme(checked ? "bootstrap4-dark-blue" : "bootstrap4-light-blue");
         ShoppingListService.getUser("abcd").then(async (response) => {
-            try {
-                const responseJson = await response.json();
-                switch (response.status) {
-                    case 200:
-                        setUser(responseJson);
-                        setLabel(t('aaa'));
-                        setCallStatus({state: "ok"});
-                        break;
-                    default:
-                        console.log(response);
-                        setLabel("Login");
-                        break;
-                }
-            } catch (error) {
-                setCallStatus({state: "error", error: error.message});
+            const responseJson = await response.json();
+            if (response.ok) {
+                setUser(responseJson);
             }
         });
     }, []);
@@ -77,7 +63,7 @@ function Header() {
             }}/>
             <Button
                 icon={<FontAwesomeIcon icon={faUsers} className="mr-1"/>}
-                label={label}
+                label={user ? t('logout') : t('login')}
                 onClick={(e) => {
                 }}
             />
@@ -86,7 +72,7 @@ function Header() {
 
     return (
         <div className="App">
-            <Menubar title={t("aaa")} start={start} end={end}/>
+            <Menubar title={t('app')} start={start} end={end}/>
             <Outlet/>
         </div>
     );

@@ -6,9 +6,12 @@ const listRouter = require('../controller/list-controller');
 const userRouter = require('../controller/user-controller'); // Import your router
 const {connect, closeDatabase, clearDatabase} = require('../util/test-setup');
 const userModel = require('../model/user');
+const mongoose = require("mongoose");
+const listModel = require("../model/list");
 let token
 let user
 let list
+let item
 beforeAll(async () => await connect());
 
 beforeEach(async () => {
@@ -34,6 +37,14 @@ beforeEach(async () => {
         .expect('Content-Type', /json/)
         .expect(200);
     list = responseList.body
+    const itemData = {title: "test item", note: "abcd"}
+    const itemResponse = await request(app)
+        .post(`/item/${list._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(itemData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+    item = itemResponse.body.items[0];
 });
 
 afterEach(async () => await clearDatabase());
@@ -47,71 +58,76 @@ app.use("/list", listRouter);
 app.use("/item", itemRouter);
 
 describe('Create item tests', () => {
-    it('responds with list object with created item', async () => {
-        const itemData = {title: "test item", note: "abcd"}
+    it('responds with list object with deleted item', async () => {
         const response = await request(app)
-            .post(`/item/${list._id}`)
+            .delete(`/item/${list._id}/${item._id}`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
             .expect(200);
-        expect(response.body.createdAt).toBeDefined();
-        expect(response.body._id).toBeDefined();
-        expect(response.body.title).toEqual(list.title);
-        expect(response.body._ownerId).toEqual(user._id);
-        expect(response.body.items.length).toBeGreaterThan(0);
-        expect(response.body.items[0].createdAt).toBeDefined();
-        expect(response.body.items[0]._id).toBeDefined();
-        expect(response.body.items[0].title).toEqual(itemData.title);
-        expect(response.body.items[0].note).toEqual(itemData.note);
-        expect(response.body.items[0].status).toEqual("new");
     });
 
     it('responds with invalid list id', async () => {
-        const itemData = {title: "test item", note: "abcd"}
         const response = await request(app)
-            .post(`/item/3850532`)
+            .delete(`/item/3850532/659096bbc5b22975df88719a`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
             .expect(400);
-        expect(response.body.message).toEqual("Invalid List ID");
+        expect(response.body.message).toEqual("Invalid input data");
+    });
+
+    it('responds with invalid item id', async () => {
+        const response = await request(app)
+            .delete(`/item/659096bbc5b22975df88719a/3850532`)
+            .set('Authorization', `Bearer ${token}`)
+            .send()
+            .expect('Content-Type', /json/)
+            .expect(400);
+        expect(response.body.message).toEqual("Invalid input data");
     });
 
     it('responds with list not found', async () => {
-        const itemData = {title: "test item", note: "abcd"}
         const response = await request(app)
-            .post(`/item/659096bbc5b22975df88719a`)
+            .delete(`/item/659096bbc5b22975df88719a/659096bbc5b22975df88719a`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
             .expect(404);
         expect(response.body.message).toEqual("List not found");
     });
 
-    it('responds with title minLength error', async () => {
-        const itemData = {title: "t", note: "abcd"}
+    it('responds with item not found', async () => {
         const response = await request(app)
-            .post(`/item/${list._id}`)
+            .delete(`/item/${list._id}/659096bbc5b22975df88719a`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
-            .expect(400);
-        expect(response.body.message).toEqual("validation of input failed");
-        expect(response.body.reason[0].keyword).toEqual("minLength");
-        expect(response.body.reason[0].message).toEqual("must NOT have fewer than 3 characters");
+            .expect(404);
+        expect(response.body.message).toEqual("Item not found");
     });
 
-    it('responds with title required error', async () => {
-        const itemData = { note: "abcd"}
+
+    it('responds with insufficient rights error', async () => {
+        const newUserData = {email: "abcd@bcda.cz", password: "ewdewf324"}
+        const newUser = new userModel(newUserData);
+        await newUser.save();
+        const listData = {title: "test", members: [newUser], _ownerId: newUser._id, status: "new", items: [{
+                _id: new mongoose.Types.ObjectId(),
+                createdAt: new Date(),
+                status: "new",
+                _ownerId: newUser._id,
+                title: "test item",
+                note: "test note",
+            }]}
+        const newList = new listModel(listData)
+        await newList.save();
         const response = await request(app)
-            .post(`/item/${list._id}`)
+            .delete(`/item/${newList._id}/${newList.items[0]._id}`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
-            .expect(400);
-        expect(response.body.message).toEqual("validation of input failed");
-        expect(response.body.reason[0].keyword).toEqual("required");
-        expect(response.body.reason[0].message).toEqual("must have required property 'title'");
+            .expect(403);
+        expect(response.body.message).toEqual("Insufficient rights");
     });
 });

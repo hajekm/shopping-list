@@ -6,14 +6,14 @@ async function DeleteAbl(req, res, next) {
     const listId = req.params.listId;
     const itemId = req.params.id;
     try {
-        if (!IsObjectId(listId) && !IsObjectId(itemId)) {
+        if (!IsObjectId(listId) || !IsObjectId(itemId)) {
             return res.status(400).json({message: "Invalid input data"});
         }
         const list = await List.findById(listId);
         if (!list) {
             return res.status(404).json({message: "List not found"});
         }
-        const item = list.items.find((e) => e._id === itemId);
+        const item = list.items.find((e) => e._id.toString() === itemId);
         if (!item) {
             return res.status(404).json({message: "Item not found"});
         }

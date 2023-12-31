@@ -5,10 +5,10 @@ const itemRouter = require('../controller/item-controller');
 const listRouter = require('../controller/list-controller');
 const userRouter = require('../controller/user-controller'); // Import your router
 const {connect, closeDatabase, clearDatabase} = require('../util/test-setup');
-const userModel = require('../model/user');
+const listModel = require("../model/list");
+const mongoose = require("mongoose");
 let token
 let user
-let list
 beforeAll(async () => await connect());
 
 beforeEach(async () => {
@@ -26,7 +26,19 @@ beforeEach(async () => {
         .expect(200);
     expect(response.body._id).toBeDefined();
     token = response.body._id;
-    const listData = {title: "test"}
+   let items = []
+    for (let i = 0; i < 5; i++) {
+        const item= {
+            _id: new mongoose.Types.ObjectId(),
+            createdAt: new Date(),
+            status: "new",
+            _ownerId: user._id,
+            title: `test${i} item`,
+            note: `test${i} note`,
+        }
+        items[i] = (item);
+    }
+    const listData = {title: "test", items: items}
     const responseList = await request(app)
         .post(`/list`)
         .set('Authorization', `Bearer ${token}`)
@@ -45,73 +57,60 @@ app.use(bodyParser.json());
 app.use("/user", userRouter);
 app.use("/list", listRouter);
 app.use("/item", itemRouter);
-
-describe('Create item tests', () => {
-    it('responds with list object with created item', async () => {
-        const itemData = {title: "test item", note: "abcd"}
+describe('List items tests', () => {
+    it('responds with requested list items objects', async () => {
         const response = await request(app)
-            .post(`/item/${list._id}`)
+            .get(`/item/${list._id}`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
             .expect(200);
-        expect(response.body.createdAt).toBeDefined();
-        expect(response.body._id).toBeDefined();
-        expect(response.body.title).toEqual(list.title);
-        expect(response.body._ownerId).toEqual(user._id);
-        expect(response.body.items.length).toBeGreaterThan(0);
-        expect(response.body.items[0].createdAt).toBeDefined();
-        expect(response.body.items[0]._id).toBeDefined();
-        expect(response.body.items[0].title).toEqual(itemData.title);
-        expect(response.body.items[0].note).toEqual(itemData.note);
-        expect(response.body.items[0].status).toEqual("new");
+        expect(response.body.length).toEqual(5);
     });
 
-    it('responds with invalid list id', async () => {
-        const itemData = {title: "test item", note: "abcd"}
+    it('responds with invalid item id', async () => {
         const response = await request(app)
-            .post(`/item/3850532`)
+            .get(`/item/659096b`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
             .expect(400);
         expect(response.body.message).toEqual("Invalid List ID");
     });
 
     it('responds with list not found', async () => {
-        const itemData = {title: "test item", note: "abcd"}
         const response = await request(app)
-            .post(`/item/659096bbc5b22975df88719a`)
+            .get(`/item/659096bbc5b22975df88719a`)
             .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .send()
             .expect('Content-Type', /json/)
             .expect(404);
         expect(response.body.message).toEqual("List not found");
     });
 
-    it('responds with title minLength error', async () => {
-        const itemData = {title: "t", note: "abcd"}
-        const response = await request(app)
-            .post(`/item/${list._id}`)
-            .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+    it('responds with requested list objects where logged user is member', async () => {
+        const newUserData = {email: "ahojda@ahoj.cz", password: "gd43rf43"};
+        const newUserResponse = await request(app)
+            .post('/user')
+            .send(newUserData)
             .expect('Content-Type', /json/)
-            .expect(400);
-        expect(response.body.message).toEqual("validation of input failed");
-        expect(response.body.reason[0].keyword).toEqual("minLength");
-        expect(response.body.reason[0].message).toEqual("must NOT have fewer than 3 characters");
-    });
-
-    it('responds with title required error', async () => {
-        const itemData = { note: "abcd"}
-        const response = await request(app)
-            .post(`/item/${list._id}`)
-            .set('Authorization', `Bearer ${token}`)
-            .send(itemData)
+            .expect(200);
+        let newUser = newUserResponse.body;
+        const loginResponse = await request(app)
+            .post('/user/login')
+            .send(newUserData)
             .expect('Content-Type', /json/)
-            .expect(400);
-        expect(response.body.message).toEqual("validation of input failed");
-        expect(response.body.reason[0].keyword).toEqual("required");
-        expect(response.body.reason[0].message).toEqual("must have required property 'title'");
+            .expect(200);
+        expect(loginResponse.body._id).toBeDefined();
+        const listData = {title: "test", members: [newUser], _ownerId: newUser._id, status: "new", items: []}
+        const newList = new listModel(listData)
+        await newList.save();
+        const response = await request(app)
+            .get(`/item/${newList._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send()
+            .expect('Content-Type', /json/)
+            .expect(403);
+        expect(response.body.message).toEqual("Insufficient rights");
     });
 });

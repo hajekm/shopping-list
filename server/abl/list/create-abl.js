@@ -21,17 +21,6 @@ async function CreateAbl(req, res, next) {
             if (!user) {
                 return res.status(404).json({message: "Owner not found"});
             }
-            for (let i = 0; i < listBody.members.length; i++) {
-                const u = await User.findById(listBody.members[i]._id);
-                if (u) {
-                    listBody.members[i]._id = u._id;
-                    listBody.members[i].role = u.role;
-                    listBody.members[i].avatar = u.avatar;
-                    listBody.members[i].email = u.email;
-                    listBody.members[i].username = u.username;
-                    listBody.members[i].createdAt = u.createdAt;
-                }
-            }
             let userCopy = {
                 _id: user._id,
                 role: user.role,
@@ -40,7 +29,23 @@ async function CreateAbl(req, res, next) {
                 username: user.username,
                 createdAt: user.createdAt,
             };
-            listBody.members.push(userCopy);
+            if (listBody.members && listBody.members.length > 0) {
+                for (let i = 0; i < listBody.members.length; i++) {
+                    const u = await User.findById(listBody.members[i]._id);
+                    if (u) {
+                        listBody.members[i]._id = u._id;
+                        listBody.members[i].role = u.role;
+                        listBody.members[i].avatar = u.avatar;
+                        listBody.members[i].email = u.email;
+                        listBody.members[i].username = u.username;
+                        listBody.members[i].createdAt = u.createdAt;
+                    }
+                }
+                listBody.members.push(userCopy);
+            } else {
+                listBody.members = [userCopy];
+            }
+            listBody._ownerId = user._id;
             const list = new List(listBody);
             await list.save();
             return res.json(list);

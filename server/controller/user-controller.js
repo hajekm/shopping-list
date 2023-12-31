@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
 
+const GetAbl = require("../abl/user/get-abl");
 const RegisterAbl = require("../abl/user/register-abl");
 const DeleteAbl = require("../abl/user/delete-abl");
 const ListAbl = require("../abl/user/list-abl");

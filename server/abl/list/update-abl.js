@@ -32,7 +32,7 @@ async function UpdateAbl(req, res, next) {
             if (!list) {
                 return res.status(404).json({message: "List not found"});
             }
-            return res.json(item);
+            return res.json(list);
         } else {
             return res.status(400).send({
                 message: "validation of input failed",

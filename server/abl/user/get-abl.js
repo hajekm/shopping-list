@@ -4,7 +4,7 @@ const IsObjectId = require("../../util/id-validator");
 async function GetAbl(req, res, next) {
     try {
         const userId = req.params.id;
-        if (!IsObjectId(listId)) {
+        if (!IsObjectId(userId)) {
             return res.status(400).json({message: "Invalid User ID"});
         }
         if (req.body.userId !== userId) {

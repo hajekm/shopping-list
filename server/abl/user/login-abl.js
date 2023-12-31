@@ -1,12 +1,12 @@
-const Ajv = require("ajv").default;
 const Token = require("../../model/token");
 const User = require("../../model/user");
 const bcrypt = require("bcrypt");
+const ajv = require("../../util/ajv-formats");
 
 let schema = {
     type: "object",
     properties: {
-        email: {type: "string"},
+        email: {type: "string", format: "email"},
         password: {type: "string"},
     },
     required: ["email", "password"],
@@ -14,7 +14,6 @@ let schema = {
 
 async function LoginAbl(req, res, next) {
     try {
-        const ajv = new Ajv();
         const loginBody = req.body;
         const valid = ajv.validate(schema, req.body);
         if (valid) {
@@ -22,7 +21,7 @@ async function LoginAbl(req, res, next) {
             if (!user) {
                 return res.status(400).json({message: "Invalid credentials"});
             }
-            if (!bcrypt.compare(loginBody.password, user.password)) {
+            if (!await bcrypt.compare(loginBody.password, user.password)) {
                 return res.status(400).json({message: "Invalid credentials"});
             }
             now = new Date();

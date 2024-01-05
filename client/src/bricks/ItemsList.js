@@ -32,6 +32,7 @@ import {Dropdown} from "primereact/dropdown";
 import StatusTag from "./StatusTag";
 import DateTag from "./DateTag";
 import {useTranslation} from "react-i18next";
+import ProgressChart from "./ProgressChart";
 
 function ItemsList() {
     const {id} = useParams();
@@ -386,13 +387,8 @@ function ItemsList() {
     const leftToolbarTemplate = () => {
         if (members.find((member) => member.id === user.id))
             return (
-                <div className="flex flex-wrap gap-2">
-                    <Button
-                        label={t('newItem')}
-                        icon={<FontAwesomeIcon className="mr-1" icon={faCirclePlus}/>}
-                        severity="success"
-                        onClick={() => setAddItemDialog(true)}
-                    />
+                <div className="flex justify-content-center gap-2">
+                    <ProgressChart items={list.items}  />
                 </div>
             );
     };
@@ -400,21 +396,39 @@ function ItemsList() {
     const rightToolbarTemplate = () => {
         if (owner.id === user.id) {
             return (
+                <div>
+                <Button
+                    label={t('newItem')}
+                    icon={<FontAwesomeIcon className="mr-1" icon={faCirclePlus}/>}
+                    severity="success"
+                    onClick={() => setAddItemDialog(true)}
+                    className="m-1"
+                />
                 <Button
                     label={t('membersLabel')}
                     icon={<FontAwesomeIcon icon={faUsers} className="mr-1"/>}
-                    className="p-button-help"
+                    className="p-button-help m-1"
                     onClick={() => setMembersDialog(true)}
                 />
+                </div>
             );
         } else if (members.find((member) => member.id === user.id)) {
             return (
+                <div>
+                <Button
+                    label={t('newItem')}
+                    icon={<FontAwesomeIcon className="mr-1" icon={faCirclePlus}/>}
+                    severity="success"
+                    onClick={() => setAddItemDialog(true)}
+                    className="m-1"
+                />
                 <Button
                     label={t('removeAsMemberButton')}
                     icon={<FontAwesomeIcon icon={faUsersSlash} className="mr-1"/>}
-                    className="p-button-help"
+                    className="p-button-help m-1"
                     onClick={() => confirmDeleteMember(user)}
                 />
+                </div>
             );
         }
     };

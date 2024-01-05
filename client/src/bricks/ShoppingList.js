@@ -27,6 +27,7 @@ import ErrorResponse from "./ErrorResponse";
 import DateTag from "./DateTag";
 import {useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
+import ListChart from "./ListChart";
 
 let emptyMember = {
     email: "",
@@ -344,7 +345,9 @@ function ShoppingList() {
                                 start={leftToolbarTemplate}
                                 end={rightToolbarTemplate}
                             />
+                            <ListChart lists={lists}/>
                         </div>
+
                         <DataView
                             value={visibleLists}
                             layout="grid"

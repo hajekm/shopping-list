@@ -52,7 +52,7 @@ function Header() {
     );
 
     const end = () => (
-        <div>
+        <div className="flex m-1">
             <LanguageSwitcher/>
             <ToggleButton className={"mr-3"} onIcon={<FontAwesomeIcon icon={faMoon}/>}
                           offIcon={<FontAwesomeIcon icon={faSun}/>}
